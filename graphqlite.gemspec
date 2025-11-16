@@ -1,18 +1,18 @@
 Gem::Specification.new do |spec|
   spec.name          = "graphqlite"
   spec.version       = "1.0.0"
-  spec.authors       = ["GraphQLite Contributors"]
-  spec.email         = ["graphqlite@example.com"]
+  spec.authors       = ["zyxzen"]
+  spec.email         = ["dev@zyxzen.com"]
 
   spec.summary       = "A lightweight, production-ready GraphQL implementation for Ruby"
   spec.description   = "GraphQLite is a simple, minimal, and clean GraphQL implementation with zero dependencies. It's designed to be easier to use and faster than existing solutions while maintaining full GraphQL spec compliance."
-  spec.homepage      = "https://github.com/yourusername/graphqlite"
+  spec.homepage      = "https://github.com/zyxzen/graphqlite"
   spec.license       = "MIT"
   spec.required_ruby_version = ">= 2.7.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/yourusername/graphqlite"
-  spec.metadata["changelog_uri"] = "https://github.com/yourusername/graphqlite/blob/main/CHANGELOG.md"
+  spec.metadata["source_code_uri"] = "https://github.com/zyxzen/graphqlite"
+  spec.metadata["changelog_uri"] = "https://github.com/zyxzen/graphqlite/blob/main/CHANGELOG.md"
 
   spec.files = Dir["lib/**/*", "README.md", "LICENSE", "CHANGELOG.md"]
   spec.require_paths = ["lib"]
