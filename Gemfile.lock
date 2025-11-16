@@ -1,0 +1,22 @@
+PATH
+  remote: .
+  specs:
+    graphqlite (1.0.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    minitest (5.26.1)
+    rake (13.3.1)
+
+PLATFORMS
+  arm64-darwin-22
+  ruby
+
+DEPENDENCIES
+  graphqlite!
+  minitest (~> 5.0)
+  rake (~> 13.0)
+
+BUNDLED WITH
+   2.7.2
