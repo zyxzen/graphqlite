@@ -1,87 +1,127 @@
 # GraphQLite
 
-A lightweight, production-ready GraphQL implementation for Ruby with **zero dependencies**. GraphQLite is designed to be simple, minimal, clean, and easier to use than existing solutions while maintaining full GraphQL spec compliance.
+## Description
+
+A lightweight, production-ready GraphQL implementation for Ruby with zero dependencies. GraphQLite is designed to be simple, minimal, and clean while maintaining full GraphQL spec compliance. It's easier to use and more straightforward than existing solutions.
 
 ## Features
 
-- **Zero runtime dependencies** - Pure Ruby implementation
-- **Simple, intuitive DSL** - Define schemas with minimal code
-- **Full GraphQL spec compliance** - Implements the October 2021 GraphQL specification
-- **Production ready** - Comprehensive error handling and validation
-- **Fast execution** - Efficient parser and executor
-- **Complete introspection** - Full support for GraphQL introspection queries
-- **Clean codebase** - Easy to understand and extend
+- Zero runtime dependencies - pure Ruby implementation
+- Simple, intuitive DSL for schema definition
+- Full GraphQL spec compliance (October 2021)
+- Production-ready with comprehensive error handling
+- Complete introspection support
+- Fast execution with efficient parser
+- Clean, maintainable codebase
 
 ## Installation
 
-Add this line to your application's Gemfile:
+Add to your Gemfile:
 
 ```ruby
 gem 'graphqlite'
 ```
 
-Or install it yourself:
+Or install directly:
 
 ```bash
 gem install graphqlite
 ```
 
-## Quick Start
+## Basic Usage
 
 ```ruby
 require 'graphqlite'
 
-# Define your schema
 schema = GraphQLite::Schema.new do
   query do
     field :hello, :String do
       "World"
     end
-
-    field :user, :User do |f|
-      f.argument :id, :ID
-      f.resolve do |args|
-        { id: args[:id], name: "John Doe", email: "john@example.com" }
-      end
-    end
-  end
-
-  object :User do
-    field :id, :ID, null: false
-    field :name, :String
-    field :email, :String
   end
 end
 
-# Execute queries
 result = schema.execute('{ hello }')
 # => { "data" => { "hello" => "World" } }
-
-result = schema.execute('{ user(id: "123") { id name email } }')
-# => { "data" => { "user" => { "id" => "123", "name" => "John Doe", "email" => "john@example.com" } } }
 ```
 
-## Schema Definition
+## Available Usages
 
-### Object Types
-
-Define object types with fields:
+### Define Object Types
 
 ```ruby
-schema = GraphQLite::Schema.new do
-  object :User do
-    field :id, :ID, null: false
-    field :name, :String
-    field :email, :String
-    field :age, :Int
-    field :active, :Boolean
+object :User do
+  field :id, :ID, null: false
+  field :name, :String
+  field :email, :String
+end
+```
+
+### Query with Arguments
+
+```ruby
+query do
+  field :user, :User do |f|
+    f.argument :id, :ID
+    f.resolve do |args|
+      User.find(args[:id])
+    end
   end
 end
 ```
 
-### Fields with Resolvers
+### Lists and Non-Null Types
 
-Fields can have custom resolvers:
+```ruby
+query do
+  field :users, [:User] do    # List of users
+    User.all
+  end
+
+  field :count, :Int, null: false do  # Required field
+    User.count
+  end
+end
+```
+
+### Mutations
+
+```ruby
+mutation do
+  field :createUser, :User do |f|
+    f.argument :name, :String
+    f.argument :email, :String
+    f.resolve do |args|
+      User.create(name: args[:name], email: args[:email])
+    end
+  end
+end
+```
+
+### Execute with Variables
+
+```ruby
+query = 'query GetUser($id: ID!) { user(id: $id) { name } }'
+result = schema.execute(query, variables: { 'id' => '123' })
+```
+
+### Execute with Context
+
+```ruby
+result = schema.execute(
+  '{ me { name } }',
+  context: { current_user: current_user }
+)
+
+# Access in resolvers
+field :me, :User do |_, args, context|
+  context[:current_user]
+end
+```
+
+## Advanced Usage
+
+### Custom Resolvers
 
 ```ruby
 object :User do
@@ -95,38 +135,13 @@ object :User do
 end
 ```
 
-### Fields with Arguments
-
-Add arguments to fields:
-
-```ruby
-query do
-  field :user, :User do |f|
-    f.argument :id, :ID
-    f.resolve do |args|
-      User.find(args[:id])
-    end
-  end
-
-  field :search, [:User] do |f|
-    f.argument :query, :String
-    f.argument :limit, :Int
-    f.resolve do |args|
-      User.search(args[:query]).limit(args[:limit] || 10)
-    end
-  end
-end
-```
-
 ### Enum Types
-
-Define enums:
 
 ```ruby
 enum :Role, values: {
-  'ADMIN' => { value: 'admin', description: 'Administrator role' },
-  'USER' => { value: 'user', description: 'Regular user role' },
-  'GUEST' => { value: 'guest', description: 'Guest role' }
+  'ADMIN' => { value: 'admin', description: 'Administrator' },
+  'USER' => { value: 'user', description: 'Regular user' },
+  'GUEST' => { value: 'guest', description: 'Guest user' }
 }
 
 object :User do
@@ -134,190 +149,158 @@ object :User do
 end
 ```
 
-### List Types
-
-Use array notation for lists:
-
-```ruby
-query do
-  field :users, [:User] do
-    User.all
-  end
-
-  field :numbers, [:Int] do
-    [1, 2, 3, 4, 5]
-  end
-end
-```
-
-### Non-Null Types
-
-Use `null: false` to make fields required:
-
-```ruby
-object :User do
-  field :id, :ID, null: false  # Required field
-  field :name, :String          # Optional field
-end
-```
-
-### Mutations
-
-Define mutations:
-
-```ruby
-mutation do
-  field :createUser, :User do |f|
-    f.argument :name, :String
-    f.argument :email, :String
-    f.resolve do |args|
-      user = User.create(name: args[:name], email: args[:email])
-      { id: user.id, name: user.name, email: user.email }
-    end
-  end
-
-  field :deleteUser, :Boolean do |f|
-    f.argument :id, :ID
-    f.resolve do |args|
-      User.find(args[:id]).destroy
-      true
-    end
-  end
-end
-```
-
-## Query Execution
-
-### Basic Execution
-
-```ruby
-result = schema.execute('{ hello }')
-# => { "data" => { "hello" => "World" } }
-```
-
-### With Variables
-
-```ruby
-query = 'query GetUser($id: ID!) { user(id: $id) { name } }'
-result = schema.execute(query, variables: { 'id' => '123' })
-# => { "data" => { "user" => { "name" => "John Doe" } } }
-```
-
-### With Context
-
-Pass context to all resolvers:
-
-```ruby
-result = schema.execute(
-  '{ me { name } }',
-  context: { current_user: current_user }
-)
-
-# Access context in resolvers
-query do
-  field :me, :User do |_, args, context|
-    context[:current_user]
-  end
-end
-```
-
-### Error Handling
-
-GraphQLite automatically handles errors:
-
-```ruby
-result = schema.execute('{ nonexistent }')
-# => { "errors" => [{ "message" => "Field 'nonexistent' does not exist on type 'Query'" }] }
-```
-
-## Built-in Scalars
-
-GraphQLite includes all standard GraphQL scalars:
-
-- `Int` - Signed 32-bit integer
-- `Float` - Signed double-precision floating-point value
-- `String` - UTF-8 character sequence
-- `Boolean` - true or false
-- `ID` - Unique identifier (serialized as string)
-
-## Custom Scalars
-
-Define custom scalar types:
+### Custom Scalars
 
 ```ruby
 scalar :DateTime,
   description: 'ISO 8601 datetime',
   serialize: ->(value) { value.iso8601 },
   parse_value: ->(value) { Time.parse(value) },
-  parse_literal: ->(value) { value.is_a?(Parser::StringValue) ? Time.parse(value.value) : nil }
+  parse_literal: ->(value) {
+    value.is_a?(Parser::StringValue) ? Time.parse(value.value) : nil
+  }
 ```
 
-## Introspection
-
-GraphQLite fully supports introspection:
+### Introspection
 
 ```ruby
-# Get schema information
-result = schema.execute('{ __schema { types { name } } }')
+# Schema introspection
+schema.execute('{ __schema { types { name } } }')
 
-# Get type information
-result = schema.execute('{ __type(name: "User") { name fields { name type { name } } } }')
+# Type introspection
+schema.execute('{ __type(name: "User") { name fields { name } } }')
 
-# Get typename
-result = schema.execute('{ user { __typename id } }')
-# => { "data" => { "user" => { "__typename" => "User", "id" => "123" } } }
+# Typename in queries
+schema.execute('{ user { __typename id } }')
 ```
 
-## Comparison with graphql-ruby
+## Detailed Documentation
 
-GraphQLite is designed to be simpler and more lightweight than the popular `graphql` gem:
+### Built-in Scalar Types
 
-| Feature | GraphQLite | graphql-ruby |
-|---------|-----------|--------------|
-| Runtime Dependencies | **0** | 3 |
-| Schema Definition | Clean DSL | Class-based or DSL |
-| Learning Curve | Low | Moderate |
-| Performance | Fast | Fast |
-| Spec Compliance | Full | Full |
-| Introspection | Full | Full |
+- `Int` - 32-bit signed integer
+- `Float` - Double-precision floating-point
+- `String` - UTF-8 character sequence
+- `Boolean` - true or false
+- `ID` - Unique identifier (serialized as string)
 
-## Example: Blog API
+### Schema Definition API
+
+**Object Types**
+```ruby
+object :TypeName do
+  field :fieldName, :FieldType
+  field :requiredField, :Type, null: false
+  field :listField, [:Type]
+  field :computedField, :Type do |object, args, context|
+    # resolver logic
+  end
+end
+```
+
+**Fields with Arguments**
+```ruby
+field :search, [:User] do |f|
+  f.argument :query, :String
+  f.argument :limit, :Int
+  f.resolve do |args, context|
+    User.search(args[:query]).limit(args[:limit] || 10)
+  end
+end
+```
+
+**Query Root**
+```ruby
+query do
+  field :fieldName, :Type do |f|
+    f.argument :arg, :ArgType
+    f.resolve { |args| ... }
+  end
+end
+```
+
+**Mutation Root**
+```ruby
+mutation do
+  field :actionName, :ReturnType do |f|
+    f.argument :input, :InputType
+    f.resolve { |args| ... }
+  end
+end
+```
+
+### Query Execution API
+
+```ruby
+# Basic execution
+schema.execute(query_string)
+
+# With variables
+schema.execute(query_string, variables: { 'key' => 'value' })
+
+# With context
+schema.execute(query_string, context: { user: current_user })
+
+# Combined
+schema.execute(
+  query_string,
+  variables: variables_hash,
+  context: context_hash
+)
+```
+
+### Error Handling
+
+GraphQLite automatically validates and reports errors:
+
+```ruby
+result = schema.execute('{ invalidField }')
+# => { "errors" => [{ "message" => "Field 'invalidField' does not exist..." }] }
+```
+
+Errors include:
+- Syntax errors in queries
+- Field validation errors
+- Type mismatch errors
+- Argument validation errors
+- Runtime resolver errors
+
+### Complete Example
 
 ```ruby
 schema = GraphQLite::Schema.new do
-  enum :PostStatus, values: {
-    'DRAFT' => { value: 'draft' },
-    'PUBLISHED' => { value: 'published' },
-    'ARCHIVED' => { value: 'archived' }
+  enum :Status, values: {
+    'ACTIVE' => { value: 'active' },
+    'INACTIVE' => { value: 'inactive' }
   }
-
-  object :Author do
-    field :id, :ID, null: false
-    field :name, :String
-    field :email, :String
-    field :posts, [:Post] do |author|
-      Post.where(author_id: author[:id])
-    end
-  end
 
   object :Post do
     field :id, :ID, null: false
     field :title, :String
     field :content, :String
-    field :status, :PostStatus
-    field :author, :Author do |post|
-      Author.find(post[:author_id])
+    field :status, :Status
+    field :author, :User do |post|
+      User.find(post[:author_id])
+    end
+  end
+
+  object :User do
+    field :id, :ID, null: false
+    field :name, :String
+    field :email, :String
+    field :posts, [:Post] do |user|
+      Post.where(author_id: user[:id])
     end
   end
 
   query do
-    field :post, :Post do |f|
+    field :user, :User do |f|
       f.argument :id, :ID
-      f.resolve { |args| Post.find(args[:id]) }
+      f.resolve { |args| User.find(args[:id]) }
     end
 
     field :posts, [:Post] do |f|
-      f.argument :status, :PostStatus
+      f.argument :status, :Status
       f.resolve do |args|
         query = Post.all
         query = query.where(status: args[:status]) if args[:status]
@@ -335,48 +318,22 @@ schema = GraphQLite::Schema.new do
         Post.create(
           title: args[:title],
           content: args[:content],
-          author_id: args[:authorId],
-          status: 'draft'
+          author_id: args[:authorId]
         )
-      end
-    end
-
-    field :publishPost, :Post do |f|
-      f.argument :id, :ID
-      f.resolve do |args|
-        post = Post.find(args[:id])
-        post.update(status: 'published')
-        post
       end
     end
   end
 end
 
-# Query examples
-result = schema.execute('{ posts { id title author { name } } }')
-result = schema.execute('{ posts(status: PUBLISHED) { title } }')
+# Execute queries
+schema.execute('{ posts { title author { name } } }')
+schema.execute('{ posts(status: ACTIVE) { title } }')
 
-# Mutation example
+# Execute mutations
 mutation = 'mutation { createPost(title: "Hello", content: "World", authorId: "1") { id } }'
-result = schema.execute(mutation)
+schema.execute(mutation)
 ```
-
-## Testing
-
-Run the test suite:
-
-```bash
-rake test
-```
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub.
 
 ## License
 
-The gem is available as open source under the terms of the MIT License.
-
-## Credits
-
-Created with ❤️ to provide a lightweight, production-ready GraphQL solution for Ruby.
+MIT License
